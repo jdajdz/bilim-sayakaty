@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ky">
+<head>
+    <meta charset="UTF-8">
+    <title>Билим Академиясы: 25 Кадам</title>
+    <style>
+        :root { --primary: #6c5ce7; --dark: #2d3436; --success: #00b894; --bg: #dfe6e9; --tech: #0984e3; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; width: 480px; padding: 35px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); text-align: center; position: relative; }
+        .container::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: linear-gradient(90deg, var(--primary), var(--tech)); border-radius: 30px 30px 0 0; }
+        
+        .progress-box { margin-bottom: 25px; }
+        .bar-bg { background: #eee; height: 12px; border-radius: 10px; overflow: hidden; }
+        #bar-fill { background: var(--success); width: 0%; height: 100%; transition: 0.8s ease; }
+        
+        h2 { color: var(--dark); margin: 10px 0; }
+        .category { color: var(--primary); font-weight: bold; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; }
+        
+        input { width: 85%; padding: 15px; margin: 15px 0; border: 2px solid #dfe6e9; border-radius: 15px; font-size: 1.2rem; outline: none; text-align: center; }
+        button { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 15px; cursor: pointer; font-size: 1.1rem; width: 100%; font-weight: bold; transition: 0.3s; }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+        
+        .hidden { display: none; }
+        .next-btn { background: var(--success) !important; margin-top: 15px; }
+
+        /* Кроссворд квадраттары */
+        .char-grid { display: flex; justify-content: center; gap: 5px; margin: 15px 0; }
+        .char-box { width: 35px; height: 35px; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 5px; background: #f9f9f9; }
+        
+        /* Эс тутум торчосу */
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
+        .cell { height: 65px; background: #f1f2f6; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="progress-box">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem;">
+            <b id="lvl-info">Деңгээл 1/25</b>
+            <b id="percent">0%</b>
+        </div>
+        <div class="bar-bg"><div id="bar-fill"></div></div>
+    </div>
+
+    <div id="game-area">
+        <span class="category" id="cat-name">Логика</span>
+        <h2 id="title">Санды Тап</h2>
+        <p id="desc">Жүктөлүүдө...</p>
+        
+        <div id="visual-slot"></div>
+        
+        <input type="text" id="userInput" autocomplete="off">
+        <button id="checkBtn" onclick="checkLogic()">Текшерүү</button>
+        <button id="nextBtn" class="hidden next-btn" onclick="nextStep()">Кийинки Кадам ➡️</button>
+        <p id="msg" style="margin-top: 15px; font-weight: bold;"></p>
+    </div>
+</div>
+
+<script>
+    let step = 1; 
+    let targetAns;
+
+    function loadLevel() {
+        const ui = {
+            cat: document.getElementById('cat-name'),
+            title: document.getElementById('title'),
+            desc: document.getElementById('desc'),
+            input: document.getElementById('userInput'),
+            visual: document.getElementById('visual-slot'),
+            msg: document.getElementById('msg'),
+            next: document.getElementById('nextBtn'),
+            check: document.getElementById('checkBtn'),
+            bar: document.getElementById('bar-fill'),
+            lvl: document.getElementById('lvl-info'),
+            per: document.getElementById('percent')
+        };
+
+        ui.input.value = "";
+        ui.input.classList.remove('hidden');
+        ui.check.classList.remove('hidden');
+        ui.next.classList.add('hidden');
+        ui.msg.innerText = "";
+        ui.visual.innerHTML = "";
+
+        let p = ((step - 1) / 25) * 100;
+        ui.bar.style.width = p + "%";
+        ui.per.innerText = Math.round(p) + "%";
+        ui.lvl.innerText = `Деңгээл ${step}/25`;
+
+        // --- 5 ОЮНДУН ЛОГИКАСЫ ---
+        if (step <= 5) {
+            ui.cat.innerText = "Оюн 1: Логика";
+            ui.title.innerText = "Сандык Лабиринт";
+            let max = step * 10;
+            targetAns = Math.floor(Math.random() * max) + 1;
+            ui.desc.innerText = `1ден ${max} чейин сан ойлодум. Тап:`;
+        } 
+        else if (step <= 10) {
+            ui.cat.innerText = "Оюн 2: Математика";
+            ui.title.innerText = "Ыкчам Эсептөө";
+            let s = step - 5;
+            let a = Math.floor(Math.random() * (s * 10)) + 5;
+            let b = Math.floor(Math.random() * (s * 8)) + 2;
+            targetAns = a * b;
+            ui.desc.innerText = `${a} × ${b} = ?`;
+        }
+        else if (step <= 15) {
+            ui.cat.innerText = "Оюн 3: Эс Тутум";
+            ui.title.innerText = "Символдорду Эсте";
+            ui.input.classList.add('hidden');
+            ui.check.classList.add('hidden');
+            ui.desc.innerText = "Окшош жуптарды тап:";
+            startMemory(step - 10, ui.visual);
+        }
+        else if (step <= 20) {
+            ui.cat.innerText = "Оюн 4: Дүйнө Тааным";
+            ui.title.innerText = "Интеллектуалдык Суроо";
+            const questions = [
+                {q: "Билим булагы эмне?", a: "КИТЕП"},
+                {q: "Эң ардактуу кесип?", a: "МУГАЛИМ"},
+                {q: "Кыргызстандын борбору?", a: "БИШКЕК"},
+                {q: "Компьютердин мээси?", a: "ПРОЦЕССОР"},
+                {q: "Канчалык көп алсаң чоңоёт?", a: "ЧУҢКУР"}
+            ];
+            let g = questions[step - 16];
+            ui.desc.innerText = g.q;
+            targetAns = g.a;
+        }
+        else {
+            ui.cat.innerText = "Оюн 5: Технология Кроссворд";
+            ui.title.innerText = "Программалоо Терминдери";
+            const cross = [
+                {q: "Веб-баракчанын негизги тили?", a: "HTML"},
+                {q: "Веб-сайттын стилин жасаган тил?", a: "CSS"},
+                {q: "Маалыматтын эң кичине бирдиги?", a: "БИТ"},
+                {q: "Программадагы катаны издөө?", a: "ОҢДОО"},
+                {q: "Интернетке кирүүчү программа?", a: "БРАУЗЕР"}
+            ];
+            let c = cross[step - 21];
+            ui.desc.innerText = c.q;
+            targetAns = c.a;
+            
+            // Кроссворд квадраттарын чийүү
+            let gridHtml = '<div class="char-grid">';
+            for(let i=0; i<targetAns.length; i++) gridHtml += '<div class="char-box">?</div>';
+            gridHtml += '</div>';
+            ui.visual.innerHTML = gridHtml;
+        }
+    }
+
+    function checkLogic() {
+        let val = document.getElementById('userInput').value.trim().toUpperCase();
+        let msg = document.getElementById('msg');
+        
+        if (step <= 5) {
+            if(val == targetAns) success();
+            else msg.innerText = val < targetAns ? "Жогору! ⬆️" : "Төмөн! ⬇️";
+        } else if (step <= 10) {
+            if(val == targetAns) success();
+            else msg.innerText = "Ката! Кайра эсепте.";
+        } else {
+            if(val === targetAns || val.includes(targetAns)) success();
+            else msg.innerText = "Туура эмес жооп.";
+        }
+    }
+
+    function startMemory(lvl, container) {
+        let pairs = lvl + 2;
+        let icons = ['🍎','⭐','🍀','💎','🚀','🌈','🔔','🎈'].slice(0, pairs);
+        let deck = [...icons, ...icons].sort(() => Math.random() - 0.5);
+        container.innerHTML = '<div class="grid" id="mG"></div>';
+        let f = [], m = 0;
+        deck.forEach(icon => {
+            const c = document.createElement('div');
+            c.className = 'cell';
+            c.onclick = function() {
+                if(f.length < 2 && !this.innerText) {
+                    this.innerText = icon; f.push(this);
+                    if(f.length === 2) {
+                        if(f[0].innerText === f[1].innerText) { m++; f=[]; if(m === pairs) success(); }
+                        else { setTimeout(() => { f.forEach(x => x.innerText = ""); f=[]; }, 400); }
+                    }
+                }
+            };
+            document.getElementById('mG').appendChild(c);
+        });
+    }
+
+    function success() {
+        document.getElementById('msg').innerText = "ТУУРА! ✅";
+        document.getElementById('msg').style.color = "var(--success)";
+        document.getElementById('nextBtn').classList.remove('hidden');
+        
+        // Кроссворд болсо тамгаларды толтуруу
+        if(step > 20) {
+            const boxes = document.querySelectorAll('.char-box');
+            for(let i=0; i<targetAns.length; i++) boxes[i].innerText = targetAns[i];
+        }
+    }
+
+    function nextStep() {
+        step++;
+        if(step > 25) {
+            alert("КУТТУКТАЙБЫЗ! Сиз №67 Жумаш Раимкулов атындагы кесиптик лицейди 25 баскычынан тең өттүңүз! 🏆🎓");
+            location.reload();
+        } else {
+            loadLevel();
+        }
+    }
+
+    loadLevel();
+</script>
+</body>
+</html>
